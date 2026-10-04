@@ -4,10 +4,10 @@
 
 ## 1. ファイル構成
 
-既存の `doc/`（別演習の成果物）とは混ぜないよう、新しいディレクトリ `customer_api/` にまとめる。
+他の課題（`doc/`、`課題2_共通演習/` など）と混ざらないよう、課題フォルダ `課題2_OI1G/` の下の `customer_api/` にまとめる。
 
 ```
-customer_api/
+課題2_OI1G/customer_api/
 ├── app/
 │   ├── __init__.py
 │   ├── main.py         # FastAPI アプリ本体・ルーティング（登録/変更/削除/検索）
@@ -93,12 +93,12 @@ customer_api/
 ## 4. 未確定事項（人が判断する）
 - **ロック中の登録**：SQLite は DB 全体がロックされるため、ロック中は登録も失敗する。登録も `LOCKED` にするか（案：同じく `LOCKED` を返す）。
 - **ロック中の検索**：読み取りは `BEGIN IMMEDIATE` 中でも実行できるので、検索はエラーにしない想定。
-- **DB の場所**：環境変数 `DB_PATH` で指定する（既定値は `customer_api/customers.db`）。`*.db` を `.gitignore` に追加する。
+- **DB の場所**：環境変数 `DB_PATH` で指定する（既定値は `課題2_OI1G/customer_api/customers.db`）。`*.db` を `.gitignore` に追加する。
 - **ログの出力先**：標準出力のみとするか、ファイルにも出すか（案：標準出力のみ）。
 
 ## 5. 差分方針（ドラフト作成時）
-- 追加するのは `customer_api/` 配下だけ。`doc/` には触れない。
+- 追加するのは `課題2_OI1G/` 配下だけ。`doc/` や他の課題フォルダには触れない。
 - 既存ファイルの変更は次の2つだけ。
   - `.gitignore`：`*.db` を追加
-  - `README.md`：「構成」に `customer_api/` の1行を追加
-- 依存パッケージは `customer_api/.venv` に入れる（既存の `.gitignore` で除外済み）。
+  - `README.md`：「構成」に `課題2_OI1G/` の1行を追加
+- 依存パッケージは `課題2_OI1G/customer_api/.venv` に入れる（既存の `.gitignore` で除外済み）。
