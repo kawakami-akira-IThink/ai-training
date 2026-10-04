@@ -39,3 +39,6 @@ build/
 
 # Obsidian
 .obsidian/
+
+# SQLite
+*.db
