@@ -6,8 +6,11 @@ FastAPI + SQLite の顧客マスタ CRUD。仕様は `../specs/SPEC.md`、計画
 
 ```
 python -m venv .venv
-.venv/Scripts/python -m pip install -r requirements.txt   # Windows (Git Bash)
+.venv/Scripts/python -m pip install --no-deps -r requirements.txt   # Windows (Git Bash)
+.venv/Scripts/python -m pip check
 ```
+
+`requirements.txt` は推移的依存まで全パッケージのバージョンを固定したロックファイル。`--no-deps` を付けて、記載のないパッケージを pip に解決させないこと。パッケージを追加・更新したら `pip freeze` で全体を書き直し、クリーンな venv で `pip install --no-deps` → `pip check` → `pytest` を通して確認する。ファイルは ASCII のみで書く（Windows の pip は日本語コメントで読み込みに失敗する）。
 
 ## 環境変数
 
