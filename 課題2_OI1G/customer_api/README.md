@@ -29,7 +29,25 @@ python -m venv .venv
 API_TOKEN=dummy-token LOG_ENCRYPTION_KEY=<生成した鍵> .venv/Scripts/python -m uvicorn app.main:app
 ```
 
-例：`curl -H "Authorization: Bearer dummy-token" "http://127.0.0.1:8000/customers?name=山田"`
+## API
+
+| メソッド・パス | 内容 |
+|------|------|
+| `POST /customers` | 登録（201 `{"id": ...}`） |
+| `PUT /customers/{id}` | 変更（204）。`id` は 1〜2^63-1、範囲外は 400 |
+| `DELETE /customers/{id}` | 削除（204）。`id` は 1〜2^63-1、範囲外は 400 |
+| `POST /customers/search` | 検索（200 で配列）。条件は JSON body。`name` 必須、`age` / `gender` / `job` は任意（AND・完全一致） |
+
+- 検索条件を URL（アクセスログ）に載せないため、検索は GET ではなく POST。`name` を必須にして全件取得を防いでいる。
+- `name` / `job` は前後の空白を除去してから検証する。制御文字（改行・タブ含む）は 400。
+- `/docs`・`/redoc`・`/openapi.json` は無効（404）。
+
+例：
+
+```
+curl -X POST -H "Authorization: Bearer dummy-token" -H "Content-Type: application/json" \
+  -d '{"name": "山田", "gender": "male"}' http://127.0.0.1:8000/customers/search
+```
 
 ## テスト
 

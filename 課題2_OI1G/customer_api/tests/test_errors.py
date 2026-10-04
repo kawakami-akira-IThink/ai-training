@@ -56,7 +56,7 @@ def test_validation_boundaries_ok(client):
 def test_validation_error_on_update_and_search(client):
     cid = client.post("/customers", json=make()).json()["id"]
     assert_error(client.put(f"/customers/{cid}", json=make(age=1001)), 400, "VALIDATION_ERROR")
-    assert_error(client.get("/customers", params={"gender": "other"}), 400, "VALIDATION_ERROR")
+    assert_error(client.post("/customers/search", json={"name": "a", "gender": "other"}), 400, "VALIDATION_ERROR")
 
 
 def test_not_found(client):
@@ -65,7 +65,7 @@ def test_not_found(client):
 
 
 def test_unauthorized(client):
-    assert_error(client.get("/customers", params={"name": "a"}, headers={"Authorization": ""}), 401, "UNAUTHORIZED")
+    assert_error(client.post("/customers/search", json={"name": "a"}, headers={"Authorization": ""}), 401, "UNAUTHORIZED")
     r = client.post("/customers", json=make(), headers={"Authorization": "Bearer wrong"})
     assert_error(r, 401, "UNAUTHORIZED")
     r = client.delete("/customers/1", headers={"Authorization": "Basic test-token"})
@@ -74,4 +74,40 @@ def test_unauthorized(client):
 
 def test_unauthorized_when_token_not_set(client, monkeypatch):
     monkeypatch.delenv("API_TOKEN")
-    assert_error(client.get("/customers", params={"name": "a"}), 401, "UNAUTHORIZED")
+    assert_error(client.post("/customers/search", json={"name": "a"}), 401, "UNAUTHORIZED")
+
+
+@pytest.mark.parametrize("cid", ["99999999999999999999", "0", "-1"])
+def test_invalid_id_is_400(client, cid):
+    assert_error(client.put(f"/customers/{cid}", json=make()), 400, "VALIDATION_ERROR")
+    assert_error(client.delete(f"/customers/{cid}"), 400, "VALIDATION_ERROR")
+
+
+@pytest.mark.parametrize("path", ["/docs", "/redoc", "/openapi.json"])
+def test_docs_disabled(client, path):
+    assert client.get(path).status_code == 404
+
+
+def test_blank_name_is_400(client):
+    assert_error(client.post("/customers", json=make(name="   ")), 400, "VALIDATION_ERROR")
+
+
+def test_trailing_space_name_is_duplicate(client):
+    assert client.post("/customers", json=make(name="山田 ")).status_code == 201
+    assert_error(client.post("/customers", json=make(name="山田")), 409, "DUPLICATE")
+
+
+@pytest.mark.parametrize("override", [
+    {"name": "山\n田"},
+    {"job": "営\t業"},
+    {"name": "山\x07田"},
+])
+def test_control_chars_are_400(client, override):
+    assert_error(client.post("/customers", json=make(**override)), 400, "VALIDATION_ERROR")
+    cid = client.post("/customers", json=make()).json()["id"]
+    assert_error(client.put(f"/customers/{cid}", json=make(**override)), 400, "VALIDATION_ERROR")
+
+
+def test_search_control_chars_and_length_are_400(client):
+    assert_error(client.post("/customers/search", json={"name": "a\nb"}), 400, "VALIDATION_ERROR")
+    assert_error(client.post("/customers/search", json={"name": "a" * 257}), 400, "VALIDATION_ERROR")

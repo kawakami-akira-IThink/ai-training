@@ -1,15 +1,20 @@
 """FastAPI アプリ本体・ルーティング。"""
-from typing import Literal
+from typing import Annotated
 
-from fastapi import Depends, FastAPI, Response
+from fastapi import Depends, FastAPI, Path, Response
 
 from app import db, log_crypto, repository
 from app.auth import require_auth
 from app.errors import duplicate, not_found, register_handlers
-from app.schemas import CustomerIn
+from app.schemas import CustomerIn, SearchIn
 
-app = FastAPI(title="顧客マスタ API", dependencies=[Depends(require_auth)])
+# /docs 等は認証の依存関係がかからないため無効化する
+app = FastAPI(title="顧客マスタ API", dependencies=[Depends(require_auth)],
+              docs_url=None, redoc_url=None, openapi_url=None)
 register_handlers(app)
+
+# SQLite の整数上限を超える id は 500 になるため範囲を制限する
+CustomerId = Annotated[int, Path(ge=1, le=2**63 - 1)]
 
 
 @app.post("/customers", status_code=201)
@@ -23,7 +28,7 @@ def create_customer(body: CustomerIn):
 
 
 @app.put("/customers/{customer_id}", status_code=204)
-def update_customer(customer_id: int, body: CustomerIn):
+def update_customer(customer_id: CustomerId, body: CustomerIn):
     with db.write_tx() as conn:
         if not repository.exists(conn, customer_id):
             raise not_found()
@@ -35,7 +40,7 @@ def update_customer(customer_id: int, body: CustomerIn):
 
 
 @app.delete("/customers/{customer_id}", status_code=204)
-def delete_customer(customer_id: int):
+def delete_customer(customer_id: CustomerId):
     with db.write_tx() as conn:
         if not repository.exists(conn, customer_id):
             raise not_found()
@@ -44,12 +49,10 @@ def delete_customer(customer_id: int):
     return Response(status_code=204)
 
 
-@app.get("/customers")
-def search_customers(name: str | None = None, age: int | None = None,
-                     gender: Literal["male", "female"] | None = None, job: str | None = None):
-    conditions = {"name": name, "age": age, "gender": gender, "job": job}
-    if all(v is None for v in conditions.values()):
-        return []  # 条件なしは DB にアクセスせず 0件
+@app.post("/customers/search")
+def search_customers(body: SearchIn):
+    # 条件は body で受ける（URL に載せるとアクセスログに平文で出るため）
+    conditions = body.model_dump()
     with db.read_conn() as conn:
         result = repository.search(conn, conditions)
     log_crypto.log_event("search", 200)

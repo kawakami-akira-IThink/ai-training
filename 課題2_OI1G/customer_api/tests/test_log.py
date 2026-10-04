@@ -39,3 +39,13 @@ def test_no_key_never_logs_plaintext(client, monkeypatch, capsys):
     monkeypatch.delenv("LOG_ENCRYPTION_KEY")
     client.post("/customers", json=make(name="秘密の名前"))
     assert "秘密の名前" not in capsys.readouterr().out
+
+
+def test_search_condition_not_in_app_log(client, capsys):
+    client.post("/customers", json=make(name="秘密の名前"))
+    capsys.readouterr()
+    assert client.post("/customers/search", json={"name": "秘密の名前"}).status_code == 200
+    client.post("/customers/search", json={"gender": "male"})  # VALIDATION_ERROR
+    out = capsys.readouterr().out
+    assert "op=search" in out
+    assert "秘密の名前" not in out

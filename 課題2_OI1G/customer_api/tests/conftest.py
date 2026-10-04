@@ -37,7 +37,7 @@ def client(db_path, log_key, monkeypatch):
 @pytest.fixture
 def lock_db(client, db_path):
     """別接続で BEGIN IMMEDIATE を保持する（テーブルは先に API 呼び出しで作成しておく）。"""
-    client.get("/customers", params={"name": "x"})
+    client.post("/customers/search", json={"name": "x"})
     conn = sqlite3.connect(db_path, isolation_level=None)
     conn.execute("BEGIN IMMEDIATE")
     yield conn

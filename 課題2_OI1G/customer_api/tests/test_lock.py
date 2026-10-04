@@ -11,7 +11,7 @@ def test_locked_on_create_update_delete(client, lock_db):
 
 
 def test_search_works_while_locked(client, lock_db):
-    assert client.get("/customers", params={"name": "x"}).status_code == 200
+    assert client.post("/customers/search", json={"name": "x"}).status_code == 200
 
 
 def test_works_again_after_unlock(client, lock_db):
